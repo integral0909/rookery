@@ -20,6 +20,15 @@ const MIGRATIONS = [
   );
   CREATE INDEX sessions_user ON sessions(user_id);
   `,
+  `
+  ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE users ADD COLUMN deactivated_at INTEGER;
+
+  CREATE TABLE settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+  `,
 ];
 
 export function openDatabase(path = ':memory:') {
