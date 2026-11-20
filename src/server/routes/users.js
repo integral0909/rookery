@@ -38,7 +38,7 @@ export default function users(router, { secureCookies = false } = {}) {
   const throttle = new Throttle();
   const cookie = (token) => sessionCookie(token, { secure: secureCookies });
 
-  router.post('/api/auth/register', async ({ req, res, db, hooks }) => {
+  router.post('/api/auth/register', async ({ req, res, db, hooks, limits, address }) => {
     const body = await readJson(req);
     const username = text(body, 'username', { min: 2, max: 32, pattern: USERNAME });
     const displayName = text(body, 'displayName', { max: 64, optional: true }) || username;
@@ -51,6 +51,7 @@ export default function users(router, { secureCookies = false } = {}) {
     if (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) {
       throw new HttpError(409, 'that username is taken', 'username_taken');
     }
+    limits.signup.take(address);
     const hash = await hashPassword(password);
     const { lastInsertRowid } = db
       .prepare('INSERT INTO users (username, display_name, password_hash, created_at, is_admin) VALUES (?, ?, ?, ?, ?)')

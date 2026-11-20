@@ -24,8 +24,9 @@ export default function messageRoutes(router, { hooks }) {
     return { ...page, messages: messages.presentAll(db, page.messages) };
   });
 
-  router.post('/api/channels/:id/messages', async ({ req, params, db, requireUser }) => {
+  router.post('/api/channels/:id/messages', async ({ req, params, db, requireUser, limits }) => {
     const me = requireUser();
+    limits.message.take(me.id);
     const row = channels.writable(db, id(params.id), me);
     const body = await readJson(req);
     const parentId = body.parentId == null ? null : id(body.parentId, 'parentId');

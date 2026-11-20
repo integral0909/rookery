@@ -1,11 +1,18 @@
 import { createApp } from '../src/server/app.js';
 import { openDatabase } from '../src/server/db.js';
+import { RateLimiter } from '../src/server/ratelimit.js';
+
+// Generous limits so tests are not throttled; rate limiting has its own tests.
+export function relaxedLimits() {
+  const loose = () => new RateLimiter({ capacity: 1e6, perSecond: 1e6 });
+  return { message: loose(), write: loose(), search: loose(), signup: loose() };
+}
 
 // Starts an app on a random port with an in-memory database. Returns a small
 // client that keeps the session cookie between requests, like a browser.
-export async function startApp(t) {
+export async function startApp(t, options = {}) {
   const db = openDatabase(':memory:');
-  const app = createApp({ db });
+  const app = createApp({ db, limits: relaxedLimits(), ...options });
   await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${app.server.address().port}`;
   t.after(async () => {
