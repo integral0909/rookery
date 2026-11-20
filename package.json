@@ -17,7 +17,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "ws": "8.18.3"
+    "ws": "8.23.0"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
