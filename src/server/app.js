@@ -7,6 +7,7 @@ import { Hub } from './realtime.js';
 import channelRoutes from './routes/channels.js';
 import messageRoutes from './routes/messages.js';
 import notificationRoutes from './routes/notifications.js';
+import searchRoutes from './routes/search.js';
 import { startNotifier } from './notify.js';
 import users from './routes/users.js';
 
@@ -24,6 +25,7 @@ export function createApp({ db, publicDir = PUBLIC_DIR, log = () => {}, secureCo
   channelRoutes(router, ctx);
   messageRoutes(router, ctx);
   notificationRoutes(router, ctx);
+  searchRoutes(router);
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');

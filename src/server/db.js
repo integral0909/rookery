@@ -93,6 +93,26 @@ const MIGRATIONS = [
   CREATE INDEX notifications_user ON notifications(user_id, id);
   CREATE INDEX notifications_unread ON notifications(user_id, channel_id) WHERE read_at IS NULL;
   `,
+  `
+  CREATE VIRTUAL TABLE messages_fts USING fts5(
+    body,
+    content = 'messages',
+    content_rowid = 'id',
+    tokenize = 'porter unicode61 remove_diacritics 2'
+  );
+  INSERT INTO messages_fts (rowid, body) SELECT id, body FROM messages WHERE deleted_at IS NULL;
+
+  CREATE TRIGGER messages_fts_insert AFTER INSERT ON messages BEGIN
+    INSERT INTO messages_fts (rowid, body) VALUES (new.id, new.body);
+  END;
+  CREATE TRIGGER messages_fts_delete AFTER DELETE ON messages BEGIN
+    INSERT INTO messages_fts (messages_fts, rowid, body) VALUES ('delete', old.id, old.body);
+  END;
+  CREATE TRIGGER messages_fts_update AFTER UPDATE OF body ON messages BEGIN
+    INSERT INTO messages_fts (messages_fts, rowid, body) VALUES ('delete', old.id, old.body);
+    INSERT INTO messages_fts (rowid, body) VALUES (new.id, new.body);
+  END;
+  `,
 ];
 
 export function openDatabase(path = ':memory:') {
