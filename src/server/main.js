@@ -22,6 +22,7 @@ app.server.listen(port, host, () => {
 });
 
 function shutdown() {
+  app.close();
   app.server.close(() => {
     db.close();
     process.exit(0);

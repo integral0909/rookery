@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { checkOrigin, tokenFromRequest, userForToken } from './auth.js';
 import { HttpError, Router, sendJson, serveStatic } from './http.js';
+import { Hub } from './realtime.js';
 import channelRoutes from './routes/channels.js';
 import messageRoutes from './routes/messages.js';
 import users from './routes/users.js';
@@ -65,5 +66,8 @@ export function createApp({ db, publicDir = PUBLIC_DIR, log = () => {}, secureCo
     }
   });
 
-  return { server, router, ctx, hooks };
+  const hub = new Hub({ db, hooks, server, log });
+  ctx.hub = hub;
+
+  return { server, router, ctx, hooks, hub, close: () => hub.close() };
 }
