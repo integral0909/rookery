@@ -3,6 +3,8 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { checkOrigin, tokenFromRequest, userForToken } from './auth.js';
 import { HttpError, Router, sendJson, serveStatic } from './http.js';
+import channelRoutes from './routes/channels.js';
+import messageRoutes from './routes/messages.js';
 import users from './routes/users.js';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../public/', import.meta.url));
@@ -16,6 +18,8 @@ export function createApp({ db, publicDir = PUBLIC_DIR, log = () => {}, secureCo
 
   router.get('/api/health', () => ({ ok: true }));
   users(router, { secureCookies });
+  channelRoutes(router, ctx);
+  messageRoutes(router, ctx);
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');

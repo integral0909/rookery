@@ -29,6 +29,47 @@ const MIGRATIONS = [
     value TEXT NOT NULL
   );
   `,
+  `
+  CREATE TABLE channels (
+    id          INTEGER PRIMARY KEY,
+    kind        TEXT NOT NULL CHECK (kind IN ('public', 'private', 'dm')),
+    name        TEXT,
+    topic       TEXT NOT NULL DEFAULT '',
+    dm_key      TEXT UNIQUE,
+    created_by  INTEGER REFERENCES users(id),
+    created_at  INTEGER NOT NULL,
+    archived_at INTEGER,
+    CHECK ((kind = 'dm') = (name IS NULL)),
+    CHECK ((kind = 'dm') = (dm_key IS NOT NULL))
+  );
+  CREATE UNIQUE INDEX channels_name ON channels(name) WHERE name IS NOT NULL;
+
+  CREATE TABLE memberships (
+    channel_id   INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role         TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'member')),
+    joined_at    INTEGER NOT NULL,
+    last_read_id INTEGER NOT NULL DEFAULT 0,
+    muted        INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (channel_id, user_id)
+  );
+  CREATE INDEX memberships_user ON memberships(user_id);
+
+  CREATE TABLE messages (
+    id            INTEGER PRIMARY KEY,
+    channel_id    INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    user_id       INTEGER NOT NULL REFERENCES users(id),
+    parent_id     INTEGER REFERENCES messages(id) ON DELETE CASCADE,
+    body          TEXT NOT NULL,
+    created_at    INTEGER NOT NULL,
+    edited_at     INTEGER,
+    deleted_at    INTEGER,
+    reply_count   INTEGER NOT NULL DEFAULT 0,
+    last_reply_at INTEGER
+  );
+  CREATE INDEX messages_channel ON messages(channel_id, parent_id, id);
+  CREATE INDEX messages_parent ON messages(parent_id, id) WHERE parent_id IS NOT NULL;
+  `,
 ];
 
 export function openDatabase(path = ':memory:') {

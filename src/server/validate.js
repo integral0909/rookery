@@ -45,4 +45,4 @@ export function int(value, name, { min = 0, max = Number.MAX_SAFE_INTEGER, fallb
 }
 
 export const USERNAME = /^[a-z0-9][a-z0-9._-]*$/i;
-export const CHANNEL_NAME = /^[a-z0-9][a-z0-9_-]*$/;
+export const CHANNEL_NAME = /^[a-z0-9][a-z0-9_-]*$/i;
