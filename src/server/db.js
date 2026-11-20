@@ -70,6 +70,29 @@ const MIGRATIONS = [
   CREATE INDEX messages_channel ON messages(channel_id, parent_id, id);
   CREATE INDEX messages_parent ON messages(parent_id, id) WHERE parent_id IS NOT NULL;
   `,
+  `
+  CREATE TABLE reactions (
+    message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    emoji      TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (message_id, emoji, user_id)
+  );
+
+  CREATE TABLE notifications (
+    id         INTEGER PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind       TEXT NOT NULL CHECK (kind IN ('mention', 'channel', 'reply', 'dm')),
+    message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    actor_id   INTEGER NOT NULL REFERENCES users(id),
+    created_at INTEGER NOT NULL,
+    read_at    INTEGER,
+    UNIQUE (user_id, message_id)
+  );
+  CREATE INDEX notifications_user ON notifications(user_id, id);
+  CREATE INDEX notifications_unread ON notifications(user_id, channel_id) WHERE read_at IS NULL;
+  `,
 ];
 
 export function openDatabase(path = ':memory:') {

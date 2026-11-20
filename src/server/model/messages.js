@@ -1,10 +1,11 @@
 import { transaction } from '../db.js';
 import { HttpError } from '../http.js';
+import { reactionsFor } from './reactions.js';
 
 export const MAX_BODY = 4000;
 export const PAGE = 50;
 
-export function present(row) {
+export function present(row, reactions = []) {
   const deleted = !!row.deleted_at;
   return {
     id: row.id,
@@ -17,7 +18,17 @@ export function present(row) {
     deleted,
     replyCount: row.reply_count,
     lastReplyAt: row.last_reply_at,
+    reactions: deleted ? [] : reactions,
   };
+}
+
+export function presentAll(db, rows) {
+  const reactions = reactionsFor(db, rows.map((r) => r.id));
+  return rows.map((r) => present(r, reactions.get(r.id)));
+}
+
+export function presentOne(db, row) {
+  return presentAll(db, [row])[0];
 }
 
 export function messageRow(db, id) {
@@ -62,6 +73,7 @@ export function editMessage(db, row, body, now = Date.now()) {
 
 export function deleteMessage(db, row, now = Date.now()) {
   db.prepare("UPDATE messages SET deleted_at = ?, body = '' WHERE id = ?").run(now, row.id);
+  db.prepare('DELETE FROM reactions WHERE message_id = ?').run(row.id);
   return messageRow(db, row.id);
 }
 

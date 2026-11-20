@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { checkOrigin, tokenFromRequest, userForToken } from './auth.js';
-import { canRead, channelRow, memberIds, present as presentChannel } from './model/channels.js';
-import { present as presentMessage } from './model/messages.js';
+import { canRead, channelRow, memberIds, present as presentChannel, unreadCounts } from './model/channels.js';
+import { presentOne } from './model/messages.js';
 
 const HEARTBEAT_MS = 30_000;
 const TYPING_MIN_GAP_MS = 2_000;
@@ -166,17 +166,17 @@ export class Hub {
     const db = this.db;
 
     hooks.on('messageCreated', ({ message, channel, clientId }) => {
-      this.sendToChannel(channel, { type: 'message.created', message: presentMessage(message), clientId });
+      this.sendToChannel(channel, { type: 'message.created', message: presentOne(db, message), clientId });
       if (message.parent_id) {
         const root = db.prepare('SELECT * FROM messages WHERE id = ?').get(message.parent_id);
-        this.sendToChannel(channel, { type: 'message.updated', message: presentMessage(root) });
+        this.sendToChannel(channel, { type: 'message.updated', message: presentOne(db, root) });
       }
     });
     hooks.on('messageUpdated', ({ message, channel }) => {
-      this.sendToChannel(channel, { type: 'message.updated', message: presentMessage(message) });
+      this.sendToChannel(channel, { type: 'message.updated', message: presentOne(db, message) });
     });
     hooks.on('messageDeleted', ({ message, channel }) => {
-      this.sendToChannel(channel, { type: 'message.deleted', message: presentMessage(message) });
+      this.sendToChannel(channel, { type: 'message.deleted', message: presentOne(db, message) });
     });
 
     hooks.on('channelCreated', ({ channel }) => {
@@ -201,6 +201,22 @@ export class Hub {
       this.sendToUser(userId, { type: 'channel.left', channelId: channel.id });
       for (const ws of this.sockets.get(userId) || []) if (channel.kind !== 'public') ws.watching.delete(channel.id);
       this.sendToChannel(channel, { type: 'member.removed', channelId: channel.id, userId });
+    });
+
+    hooks.on('reactionsChanged', ({ channel, messageId, reactions }) => {
+      this.sendToChannel(channel, { type: 'reactions.updated', channelId: channel.id, messageId, reactions });
+    });
+
+    hooks.on('notificationCreated', ({ userId, notification }) => {
+      const channel = channelRow(db, notification.channelId);
+      this.sendToUser(userId, { type: 'notification.created', notification, ...unreadCounts(db, channel.id, userId) });
+    });
+    // Read markers and cleared mentions are synced to the user's other tabs.
+    hooks.on('channelRead', ({ userId, channelId, ...counts }) => {
+      this.sendToUser(userId, { type: 'channel.read', channelId, ...counts });
+    });
+    hooks.on('notificationsChanged', ({ userId, channelId }) => {
+      this.sendToUser(userId, { type: 'channel.read', channelId, ...unreadCounts(db, channelId, userId) });
     });
 
     hooks.on('userCreated', (user) => this.broadcast({ type: 'user.updated', user }));

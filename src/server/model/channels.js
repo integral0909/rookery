@@ -32,7 +32,7 @@ export function present(db, row, userId) {
     member: !!mine,
     role: mine?.role ?? null,
     muted: !!mine?.muted,
-    lastReadId: mine?.last_read_id ?? 0,
+    ...unreadCounts(db, row.id, userId),
   };
   if (row.kind === 'dm') out.memberIds = memberIds(db, row.id);
   return out;
@@ -131,4 +131,19 @@ export function browsePublic(db, userId) {
         ORDER BY name`,
     )
     .all(userId);
+}
+
+export function unreadCounts(db, channelId, userId) {
+  const m = membership(db, channelId, userId);
+  if (!m) return { unreadCount: 0, mentionCount: 0, lastReadId: 0 };
+  const unreadCount = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM messages
+        WHERE channel_id = ? AND parent_id IS NULL AND id > ? AND user_id != ? AND deleted_at IS NULL`,
+    )
+    .get(channelId, m.last_read_id, userId).n;
+  const mentionCount = db
+    .prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND channel_id = ? AND read_at IS NULL')
+    .get(userId, channelId).n;
+  return { unreadCount, mentionCount, lastReadId: m.last_read_id };
 }

@@ -6,6 +6,8 @@ import { HttpError, Router, sendJson, serveStatic } from './http.js';
 import { Hub } from './realtime.js';
 import channelRoutes from './routes/channels.js';
 import messageRoutes from './routes/messages.js';
+import notificationRoutes from './routes/notifications.js';
+import { startNotifier } from './notify.js';
 import users from './routes/users.js';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../public/', import.meta.url));
@@ -21,6 +23,7 @@ export function createApp({ db, publicDir = PUBLIC_DIR, log = () => {}, secureCo
   users(router, { secureCookies });
   channelRoutes(router, ctx);
   messageRoutes(router, ctx);
+  notificationRoutes(router, ctx);
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -68,6 +71,7 @@ export function createApp({ db, publicDir = PUBLIC_DIR, log = () => {}, secureCo
 
   const hub = new Hub({ db, hooks, server, log });
   ctx.hub = hub;
+  startNotifier({ db, hooks, isOnline: () => (userId) => hub.isOnline(userId) });
 
   return { server, router, ctx, hooks, hub, close: () => hub.close() };
 }
