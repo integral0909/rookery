@@ -1,5 +1,7 @@
 # Rookery
 
+[![CI](https://github.com/integral0909/rookery/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/integral0909/rookery/actions/workflows/ci.yml)
+
 A self-hosted team chat server. Channels, direct messages, threads,
 reactions, full-text search and notifications run in one Node.js process
 with a single SQLite file. There's nothing else to install: no Redis, no
