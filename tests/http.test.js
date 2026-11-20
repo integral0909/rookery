@@ -42,3 +42,23 @@ test('static files are served and paths cannot escape the public folder', async 
   const escape = await fetch(`${base}/..%2fpackage.json`);
   assert.equal(escape.status, 404);
 });
+
+test('transactions nest and roll back only what failed', async () => {
+  const { transaction } = await import('../src/server/db.js');
+  const db = openDatabase(':memory:');
+  db.exec('CREATE TABLE t (v INTEGER)');
+  transaction(db, () => {
+    db.prepare('INSERT INTO t VALUES (1)').run();
+    assert.throws(() =>
+      transaction(db, () => {
+        db.prepare('INSERT INTO t VALUES (2)').run();
+        throw new Error('inner');
+      }),
+    );
+    db.prepare('INSERT INTO t VALUES (3)').run();
+  });
+  assert.deepEqual(db.prepare('SELECT v FROM t ORDER BY v').all().map((r) => r.v), [1, 3]);
+  assert.throws(() => transaction(db, () => { db.prepare('INSERT INTO t VALUES (4)').run(); throw new Error('outer'); }));
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM t').get().n, 2);
+  db.close();
+});

@@ -13,6 +13,7 @@
     "start": "node --disable-warning=ExperimentalWarning src/server/main.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/server/main.js",
     "test": "node --disable-warning=ExperimentalWarning --test 'tests/**/*.test.js'",
+    "cli": "node --disable-warning=ExperimentalWarning src/cli.js",
     "lint": "eslint ."
   },
   "dependencies": {

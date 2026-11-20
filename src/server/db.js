@@ -139,15 +139,20 @@ export function migrate(db) {
   return MIGRATIONS.length;
 }
 
-// Runs fn inside a transaction, rolling back if it throws.
+let savepoints = 0;
+
+// Runs fn inside a transaction, rolling back if it throws. Uses savepoints,
+// so calls nest: an inner failure undoes only the inner work.
 export function transaction(db, fn) {
-  db.exec('BEGIN');
+  const name = `sp${++savepoints}`;
+  db.exec(`SAVEPOINT ${name}`);
   try {
     const result = fn();
-    db.exec('COMMIT');
+    db.exec(`RELEASE ${name}`);
     return result;
   } catch (err) {
-    db.exec('ROLLBACK');
+    db.exec(`ROLLBACK TO ${name}`);
+    db.exec(`RELEASE ${name}`);
     throw err;
   }
 }
