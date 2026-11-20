@@ -1,0 +1,26 @@
+{
+  "name": "rookery",
+  "version": "0.1.0",
+  "description": "A self-hosted team chat server with channels, threads, search and notifications.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "integral0909 <sweetdream0729@gmail.com>",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server/main.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server/main.js",
+    "test": "node --disable-warning=ExperimentalWarning --test 'tests/**/*.test.js'",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "17.13.0"
+  }
+}
